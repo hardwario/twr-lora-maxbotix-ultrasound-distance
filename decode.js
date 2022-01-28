@@ -19,18 +19,12 @@ function Decode(port, bytes) {
 
     var header = u8();
     var voltage = u8() / 10;
-    var count = (bytes.length - 2) / 2;
-
-    var temperatures = [];
-
-    for (var i = 0; i < count; i++) {
-        temperatures.push(s16() / 10);
-    }
+    var distance = s16() / 10;
 
     return {
         header: header,
         voltage: voltage,
-        temperatures: temperatures
+        distance: distance
     };
 }
 

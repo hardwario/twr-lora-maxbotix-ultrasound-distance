@@ -4,6 +4,7 @@
 
 #define SEND_DATA_INTERVAL (15 * 60 * 1000)
 
+
 typedef struct
 {
     uint8_t channel;
@@ -140,7 +141,7 @@ bool at_status(void)
     return true;
 }
 
-void ultrasound_meassurement_update(void)
+void ultrasound_meassurement_update()
 {
     twr_module_sensor_set_vdd(true);
     twr_system_pll_enable();
@@ -205,7 +206,7 @@ void ultrasound_meassurement_update(void)
 
 void application_init(void)
 {
-    // twr_log_init(TWR_LOG_LEVEL_DUMP, TWR_LOG_TIMESTAMP_ABS);
+    //twr_log_init(TWR_LOG_LEVEL_DUMP, TWR_LOG_TIMESTAMP_ABS);
 
     // Initialize LED
     twr_led_init(&led, TWR_GPIO_LED, false, false);
@@ -285,7 +286,8 @@ void application_task(void)
 
     float distance_avg = NAN;
 
-    twr_data_stream_get_average(&sm_distance, &distance_avg);
+    //twr_data_stream_get_average(&sm_distance, &distance_avg);
+    twr_data_stream_get_last(&sm_distance, &distance_avg);
 
     if (!isnan(distance_avg))
     {
