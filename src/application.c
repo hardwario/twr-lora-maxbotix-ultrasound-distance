@@ -2,7 +2,6 @@
 
 #define MEASURE_INTERVAL (5 * 60 * 1000)
 #define SEND_DATA_INTERVAL (15 * 60 * 1000)
-
 typedef struct
 {
     uint8_t channel;
@@ -202,12 +201,10 @@ void ultrasound_meassurement_update(void)
     if (timeout == 0)
     {
         twr_data_stream_feed(&sm_distance, NULL);
-        twr_log_error("APP: Sensor error");
     }
     else
     {
         twr_data_stream_feed(&sm_distance, &centimeters);
-        twr_log_info("APP: Distance = %.1f cm", centimeters);
     }
 }
 
@@ -264,9 +261,6 @@ void application_init(void)
     twr_scheduler_plan_relative(0, 10 * 1000);
     
     twr_led_pulse(&led, 2000);
-
-    twr_atci_println("@BUILD_DATE: " BUILD_DATE);
-    twr_atci_println("@GIT_VERSION: " GIT_VERSION);
 }
 
 void application_task(void)
