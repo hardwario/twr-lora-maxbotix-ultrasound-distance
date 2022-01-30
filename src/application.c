@@ -30,8 +30,7 @@ twr_scheduler_task_id_t battery_measure_task_id;
 enum {
     HEADER_BOOT         = 0x00,
     HEADER_UPDATE       = 0x01,
-    HEADER_BUTTON_CLICK = 0x02,
-    HEADER_BUTTON_HOLD  = 0x03,
+    HEADER_BUTTON_PRESS = 0x02,
 
 } header = HEADER_BOOT;
 
@@ -42,7 +41,7 @@ void button_event_handler(twr_button_t *self, twr_button_event_t event, void *ev
 
     if (event == TWR_BUTTON_EVENT_PRESS)
     {
-        header = HEADER_BUTTON_CLICK;
+        header = HEADER_BUTTON_PRESS;
 
         twr_scheduler_plan_now(0);
     }

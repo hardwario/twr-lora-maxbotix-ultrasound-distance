@@ -1,11 +1,3 @@
-function decodeUplink(input) {
-    return {
-      data: Decode(input.fPort, input.bytes, 0),
-      warnings: [],
-      errors: []
-    };
-  }
-
 var cursor = 0;
 var buffer;
 
@@ -13,7 +5,7 @@ function Decode(port, bytes) {
 
     buffer = bytes;
 
-    if (bytes.length < 2) {
+    if (bytes.length != 4) {
         return {};
     }
 
