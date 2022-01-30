@@ -5,18 +5,20 @@ function Decode(port, bytes) {
 
     buffer = bytes;
 
-    if (bytes.length != 4) {
+    if (bytes.length != 6) {
         return {};
     }
 
     var header = u8();
     var voltage = u8() / 10;
     var distance = s16() / 10;
+    var temperature_core = s16() / 10;
 
     return {
         header: header,
         voltage: voltage,
-        distance: distance
+        distance: distance,
+        temperature_core: temperature_core
     };
 }
 

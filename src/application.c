@@ -1,7 +1,6 @@
 #include <twr.h>
 
 #define MEASURE_INTERVAL (5 * 60 * 1000)
-
 #define SEND_DATA_INTERVAL (15 * 60 * 1000)
 
 typedef struct
@@ -11,6 +10,9 @@ typedef struct
     twr_tick_t next_pub;
 
 } event_param_t;
+
+TWR_DATA_STREAM_FLOAT_BUFFER(sm_core_temperature_buffer, (SEND_DATA_INTERVAL / MEASURE_INTERVAL))
+twr_data_stream_t sm_core_temperature;
 
 TWR_DATA_STREAM_FLOAT_BUFFER(sm_distance_buffer, (SEND_DATA_INTERVAL / MEASURE_INTERVAL))
 twr_data_stream_t sm_distance;
@@ -25,6 +27,8 @@ twr_button_t button;
 // Lora instance
 twr_cmwx1zzabz_t lora;
 
+twr_tmp112_t tmp112;
+
 twr_scheduler_task_id_t battery_measure_task_id;
 
 enum {
@@ -33,7 +37,6 @@ enum {
     HEADER_BUTTON_PRESS = 0x02,
 
 } header = HEADER_BOOT;
-
 
 void button_event_handler(twr_button_t *self, twr_button_event_t event, void *event_param)
 {
@@ -44,6 +47,19 @@ void button_event_handler(twr_button_t *self, twr_button_event_t event, void *ev
         header = HEADER_BUTTON_PRESS;
 
         twr_scheduler_plan_now(0);
+    }
+}
+
+void tmp112_event_handler(twr_tmp112_t *self, twr_tmp112_event_t event, void *event_param)
+{
+    if (event == TWR_TMP112_EVENT_UPDATE)
+    {
+        float temperature;
+
+        if (twr_tmp112_get_temperature_celsius(self, &temperature))
+        {
+            twr_data_stream_feed(&sm_core_temperature, &temperature);
+        }
     }
 }
 
@@ -103,7 +119,6 @@ bool at_send(void)
 
     return true;
 }
-
 
 bool at_status(void)
 {
@@ -208,6 +223,10 @@ void application_init(void)
     twr_button_init(&button, TWR_GPIO_BUTTON, TWR_GPIO_PULL_DOWN, false);
     twr_button_set_event_handler(&button, button_event_handler, NULL);
 
+    twr_tmp112_init(&tmp112, TWR_I2C_I2C0, 0x49);
+    twr_tmp112_set_event_handler(&tmp112, tmp112_event_handler, NULL);
+    twr_tmp112_set_update_interval(&tmp112, MEASURE_INTERVAL);
+
     // Initialize battery
     twr_module_battery_init();
     twr_module_battery_set_event_handler(battery_event_handler, NULL);
@@ -215,15 +234,14 @@ void application_init(void)
 
     // Initialize Sensor Module
     twr_module_sensor_init();
-
     twr_gpio_init(TWR_GPIO_P4);
     twr_gpio_set_mode(TWR_GPIO_P4, TWR_GPIO_MODE_INPUT);
-
     twr_scheduler_register(ultrasound_meassurement_update, NULL, MEASURE_INTERVAL);
 
     // Init stream buffers for averaging
     twr_data_stream_init(&sm_voltage, 1, &sm_voltage_buffer);
     twr_data_stream_init(&sm_distance, 1, &sm_distance_buffer);
+    twr_data_stream_init(&sm_core_temperature, 1, &sm_core_temperature_buffer);
 
     // Initialize lora module
     twr_cmwx1zzabz_init(&lora, TWR_UART_UART1);
@@ -251,7 +269,6 @@ void application_init(void)
     twr_atci_println("@GIT_VERSION: " GIT_VERSION);
 }
 
-
 void application_task(void)
 {
     if (!twr_cmwx1zzabz_is_ready(&lora))
@@ -261,7 +278,7 @@ void application_task(void)
         return;
     }
 
-    static uint8_t buffer[4];
+    static uint8_t buffer[6];
 
     memset(buffer, 0xff, sizeof(buffer));
 
@@ -287,6 +304,18 @@ void application_task(void)
 
         buffer[2] = distance_i16 >> 8;
         buffer[3] = distance_i16;
+    }
+
+    float core_temperature_avg = NAN;
+
+    twr_data_stream_get_average(&sm_core_temperature, &core_temperature_avg);
+
+    if (!isnan(core_temperature_avg))
+    {
+        int16_t temperature_i16 = (int16_t) (core_temperature_avg * 10.f);
+
+        buffer[4] = temperature_i16 >> 8;
+        buffer[5] = temperature_i16;
     }
 
     twr_cmwx1zzabz_send_message(&lora, buffer, sizeof(buffer));
