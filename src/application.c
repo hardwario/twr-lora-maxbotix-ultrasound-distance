@@ -4,7 +4,6 @@
 
 #define SEND_DATA_INTERVAL (15 * 60 * 1000)
 
-
 typedef struct
 {
     uint8_t channel;
@@ -41,15 +40,9 @@ void button_event_handler(twr_button_t *self, twr_button_event_t event, void *ev
 {
     (void) event_param;
 
-    if (event == TWR_BUTTON_EVENT_CLICK)
+    if (event == TWR_BUTTON_EVENT_PRESS)
     {
         header = HEADER_BUTTON_CLICK;
-
-        twr_scheduler_plan_now(0);
-    }
-    else if (event == TWR_BUTTON_EVENT_HOLD)
-    {
-        header = HEADER_BUTTON_HOLD;
 
         twr_scheduler_plan_now(0);
     }
@@ -126,11 +119,11 @@ bool at_status(void)
         twr_atci_printfln("$STATUS: \"Voltage\",");
     }
 
-    float distance_avg = NAN;
+    float distance_last = NAN;
 
-    if (twr_data_stream_get_average(&sm_distance, &distance_avg))
+    if (twr_data_stream_get_last(&sm_distance, &distance_last))
     {
-        twr_atci_printfln("$STATUS: \"Distance\",%.1f", distance_avg);
+        twr_atci_printfln("$STATUS: \"Distance\",%.1f", distance_last);
     }
     else 
     {
@@ -141,7 +134,7 @@ bool at_status(void)
     return true;
 }
 
-void ultrasound_meassurement_update()
+void ultrasound_meassurement_update(void)
 {
     twr_module_sensor_set_vdd(true);
     twr_system_pll_enable();
@@ -284,14 +277,14 @@ void application_task(void)
         buffer[1] = ceil(voltage_avg * 10.f);
     }
 
-    float distance_avg = NAN;
+    float distance_last = NAN;
 
     //twr_data_stream_get_average(&sm_distance, &distance_avg);
-    twr_data_stream_get_last(&sm_distance, &distance_avg);
+    twr_data_stream_get_last(&sm_distance, &distance_last);
 
-    if (!isnan(distance_avg))
+    if (!isnan(distance_last))
     {
-        int16_t distance_i16 = (int16_t) (distance_avg * 10.f);
+        int16_t distance_i16 = (int16_t) (distance_last * 10.f);
 
         buffer[2] = distance_i16 >> 8;
         buffer[3] = distance_i16;
