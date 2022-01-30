@@ -1,7 +1,11 @@
 var cursor = 0;
 var buffer;
 
-function Decode(port, bytes) {
+// Uncomment for ChirpStack:
+function Decode(port, bytes, variables) {
+
+    // Uncomment for The Things Network:
+    // function Decoder(port, bytes) {
 
     buffer = bytes;
 
