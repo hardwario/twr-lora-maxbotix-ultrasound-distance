@@ -21,18 +21,21 @@ twr_data_stream_t sm_voltage;
 
 // LED instance
 twr_led_t led;
+
 // Button instance
 twr_button_t button;
-// Lora instance
+
+// LoRa Module instance
 twr_cmwx1zzabz_t lora;
 
+// TMP112 instance
 twr_tmp112_t tmp112;
 
 twr_scheduler_task_id_t battery_measure_task_id;
 
 enum {
-    HEADER_BOOT         = 0x00,
-    HEADER_UPDATE       = 0x01,
+    HEADER_BOOT = 0x00,
+    HEADER_UPDATE = 0x01,
     HEADER_BUTTON_PRESS = 0x02,
 
 } header = HEADER_BOOT;
@@ -210,8 +213,6 @@ void ultrasound_meassurement_update(void)
 
 void application_init(void)
 {
-    //twr_log_init(TWR_LOG_LEVEL_DUMP, TWR_LOG_TIMESTAMP_ABS);
-
     // Initialize LED
     twr_led_init(&led, TWR_GPIO_LED, false, false);
     twr_led_set_mode(&led, TWR_LED_MODE_OFF);
@@ -240,17 +241,16 @@ void application_init(void)
     twr_data_stream_init(&sm_distance, 1, &sm_distance_buffer);
     twr_data_stream_init(&sm_core_temperature, 1, &sm_core_temperature_buffer);
 
-    // Initialize lora module
+    // Initialize Lora Module
     twr_cmwx1zzabz_init(&lora, TWR_UART_UART1);
     twr_cmwx1zzabz_set_event_handler(&lora, lora_callback, NULL);
     twr_cmwx1zzabz_set_class(&lora, TWR_CMWX1ZZABZ_CONFIG_CLASS_A);
-    //twr_cmwx1zzabz_set_debug(&lora, debug); // Enable debug output of LoRa Module commands to Core Module console
 
     // Initialize AT command interface
     twr_at_lora_init(&lora);
     static const twr_atci_command_t commands[] = {
             TWR_AT_LORA_COMMANDS,
-            {"$SEND", at_send, NULL, NULL, NULL, "Immediately send packet"},
+            {"$SEND", at_send, NULL, NULL, NULL, "Send packet immediately"},
             {"$STATUS", at_status, NULL, NULL, NULL, "Show status"},
             TWR_ATCI_COMMAND_CLAC,
             TWR_ATCI_COMMAND_HELP
@@ -289,7 +289,6 @@ void application_task(void)
 
     float distance_last = NAN;
 
-    //twr_data_stream_get_average(&sm_distance, &distance_avg);
     twr_data_stream_get_last(&sm_distance, &distance_last);
 
     if (!isnan(distance_last))
@@ -313,6 +312,8 @@ void application_task(void)
     }
 
     twr_cmwx1zzabz_send_message(&lora, buffer, sizeof(buffer));
+
+    header = HEADER_UPDATE;
 
     twr_scheduler_plan_current_relative(SEND_DATA_INTERVAL);
 }
