@@ -150,7 +150,7 @@ bool at_status(void)
     return true;
 }
 
-void ultrasound_meassurement_update(void)
+void ultrasound_meassurement_update(void *param)
 {
     twr_module_sensor_set_vdd(true);
     twr_system_pll_enable();
